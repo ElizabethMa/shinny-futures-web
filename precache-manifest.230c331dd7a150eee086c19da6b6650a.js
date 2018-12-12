@@ -4,7 +4,7 @@ self.__precacheManifest = [
     "url": "/shinny-futures-web/robots.txt"
   },
   {
-    "revision": "1a0e728158e69c1771cd40a748a6402b",
+    "revision": "d0f4e9b675bd8a6adaf63d89e582646b",
     "url": "/shinny-futures-web/index.html"
   },
   {
@@ -12,8 +12,8 @@ self.__precacheManifest = [
     "url": "/shinny-futures-web/assets/js/chunk-vendors.2c11de54.js"
   },
   {
-    "revision": "ac36089e7951f1d46e87",
-    "url": "/shinny-futures-web/assets/js/app.66adc0d1.js"
+    "revision": "96b1ec06b45fe4d82fb6",
+    "url": "/shinny-futures-web/assets/js/app.171697e9.js"
   },
   {
     "revision": "a2c4a261a239aa84463dc70e4bac9b9a",
@@ -32,7 +32,7 @@ self.__precacheManifest = [
     "url": "/shinny-futures-web/assets/css/chunk-vendors.0ba8cfc9.css"
   },
   {
-    "revision": "ac36089e7951f1d46e87",
-    "url": "/shinny-futures-web/assets/css/app.2e026fc0.css"
+    "revision": "96b1ec06b45fe4d82fb6",
+    "url": "/shinny-futures-web/assets/css/app.d6dffc84.css"
   }
 ];
