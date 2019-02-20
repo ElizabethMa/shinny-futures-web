@@ -1,25 +1,19 @@
 <template>
-  <el-dialog
-      width="80%"
-      title="确认结算单"
-      :lock-scroll="false"
-      :show-close="false"
-      :append-to-body="true"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-      :visible="visible">
-      <div class="confirm-container">
-        <pre>{{confirmContent}}</pre>
-      </div>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="clickOk">确 定</el-button>
-      </span>
-  </el-dialog>
+    <Modal
+            title="确认结算单"
+            v-model="visible"
+            :closable="false"
+            :mask-closable="false">
+        <div class="confirm-container">
+            <pre>{{confirmContent}}</pre>
+        </div>
+        <div slot="footer">
+            <Button type="primary" @click="clickOk">确定</Button>
+        </div>
+      </Modal>
 </template>
 <script>
-  import {mapGetters} from 'vuex'
   export default {
-    props: {},
     computed: {
       visible () {
         return this.$store.state.confirm === 'doing'
@@ -30,15 +24,19 @@
     },
     methods: {
       clickOk: function () {
-        this.$store.commit('CONFIRM_SETTLEMENT')
+        this.$tqsdk.confirm_settlement()
+        this.$store.commit('SET_SETTLEMENT', {
+          confirm: 'done',
+          confirmContent: ''
+        })
       }
     }
   }
 </script>
 <style scoped lang="scss">
-.confirm-container {
-  overflow: scroll;
-  height: 500px;
-  border: 1px solid #ccc;
-}
+    .confirm-container {
+      overflow: scroll;
+      height: 500px;
+      border: 1px solid #ccc;
+    }
 </style>

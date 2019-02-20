@@ -1,5 +1,5 @@
 <template>
-<div class="tq-table-container" @scroll="handleScroll" :style="{height:height}">
+<div class="tq-table-container" @scroll="handleScroll" :style="{height:'100%'}">
     <table id="QuotesTable">
         <thead>
             <tr>
@@ -9,17 +9,15 @@
             </tr>
         </thead>
         <tbody>
-            <table-row v-for="(item, index) in contentList" :key="item" :symbol="item" :path="rootPath + item + '/'" :tableCol="tableCol" 
-            @rowClick="rowClick" @rowDbClick="rowDbClick" 
+            <table-row v-for="(item, index) in contentList" :key="item" :symbol="item" :path="rootPath + item + '/'" :tableCol="tableCol"
+            @rowClick="rowClick" @rowDbClick="rowDbClick"
             :class="{selected: item === selectedSymbol}"></table-row>
-            <!-- @rowContextmenu="rowContextmenu" -->
         </tbody>
     </table>
 </div>
 </template>
 
 <script>
-  // import {mapGetters} from 'vuex'
   import TableRow from './TableQuotesRow.vue'
   export default {
     data() {
@@ -67,6 +65,7 @@
     		return styleObj
     	},
         rowClick (quote) {
+            this.$store.commit('SET_SELECTED_SHOW_SYMBOL', quote.instrument_id)
         	if (quote.class === 'FUTURE') {
         		this.$store.commit('SET_SELECTED_SYMBOL', quote.instrument_id)
         	} else if (quote.class === 'FUTURE_CONT') {
@@ -75,27 +74,17 @@
             this.selectedSymbol = quote.instrument_id
         },
         rowDbClick (symbol) {
-          	this.$router.push({ name: 'stock', params: { instrument_id: symbol.instrument_id }})
+          	this.$router.push({ name: 'charts', params: { instrument_id: symbol.instrument_id }})
         },
         cellStyle ({row, column, rowIndex, columnIndex}) {
           if (['最新价', '涨跌', '涨跌幅', '今开盘', '最高价', '最低价'].includes(column.label) && row.change%1 === 0 && row.change !== 0) {
             return {
-              color: row.change > 0 ? 'red' : 'green' 
+              color: row.change > 0 ? 'red' : 'green'
             }
-          } 
+          }
           return {
             color: 'black'
           }
-        },
-        rowContextmenu (quote) {
-            // this.selectedSymbol = quote.instrument_id
-            // this.$root.contextList = [{
-            //     id: 'addCustom',
-            //     name: '添加到自选',
-            // }, {
-            //     id: 'config',
-            //     name: '配置',
-            // }]
         }
     }
   }
@@ -105,25 +94,28 @@
     .tq-table-container {
         width: 100%;
         overflow: scroll;
-        &::-webkit-scrollbar { 
+        padding-left: 4px;
+        margin-left: -4px;
+        &::-webkit-scrollbar {
             width: 0 !important;
-            height: 6 px;
-            background-color: #e6e6e6;
+            height: 12px;
         }
         &::-webkit-scrollbar-thumb {
-            height: 4 px;
-            background: #b7b7b7; 
+            height: 12px;
+            background: #b7b7b7;
         }
         table {
 	        border-spacing: 0px;
+            color: $text-color-1st;
 	    }
         table tr.selected td {
-            background: #effefe; 
+            background: #effefe;
         }
 	    // 首行
 	    table thead th,
 	    table thead td {
 	        border-top: 1px solid $table-border-color;
+            background-color: $area-header-color;
 	        position: sticky;
 	        top: 0;
 	        z-index: 20;
@@ -146,29 +138,28 @@
 	    }
 	    table th,
 	    table td {
-	        padding: 5px 8px;
+	        padding: 5px 3px;
 	        white-space: nowrap;
 	        border-bottom: 1px solid $table-border-color;
 	        border-right: 1px solid $table-border-color;
 	        // 默认单元格样式
 	        text-align: right;
-	        background-color: #fff;
-	        color: black;
+	        background-color: $area-background-color;
 	        font-size: 14px;
 
 	        // 某一列的背景色
 	        &.col-buy {
-			    background-color: #fff0f0
+			    background-color: $text-bgcolor-R
 			}
 			&.col-sell {
-			    background-color: #f0fff0
+			    background-color: $text-bgcolor-G
 			}
 			// 某一格文字颜色
 			&.R {
-				color: red
+				color: $text-color-R
 			}
 			&.G {
-			    color: green
+			    color: $text-color-G
 			}
 			// 默认单元格宽度
 			div {
@@ -176,7 +167,6 @@
 			}
             div.appendix {
                 font-size: 10px;
-                color: #666;
             }
 	        div.data-content:after {
             	content: attr(data-content);

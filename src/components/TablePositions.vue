@@ -1,115 +1,99 @@
 <template>
-    <el-table
-            :data="positions"
-            size="mini"
-            :height="height"
-            :header-cell-style="{'text-align':'center'}"
-            border
-            v-loading="loading"
-            @row-click="rowClick">
-        <el-table-column
-                prop="instrument_id"
-                label="合约代码"
-                fixed
-                width="80">
-        </el-table-column>
-        <el-table-column
-                prop="last_price"
-                label="最新价"
-                align="right"
-                fixed
-                width="80">
-        </el-table-column>
-        <el-table-column
-                prop="volume_long"
-                label="多仓"
-                align="right"
-                class-name="col-buy"
-                width="50">
-        </el-table-column>
-        <el-table-column
-                prop="open_price_long"
-                label="开仓均价"
-                align="right"
-                class-name="col-buy"
-                width="80"
-                :formatter="formatterPrice">
-        </el-table-column>
-        <el-table-column
-                prop="position_profit_long"
-                label="持仓盈亏"
-                align="right"
-                class-name="col-buy"
-                width="80"
-                :formatter="formatterPrice">
-        </el-table-column>
-        <el-table-column label="操作" width="150"  class-name="col-buy">
-            <template slot-scope="scope">
-                <el-button
-                  size="mini"
-                  type="success"
-                  :disabled="scope.row.volume_long === 0"
-                  @click="handleClose(scope.$index, scope.row, 'SELL')">平仓</el-button>
-                <el-button
-                  size="mini"
-                  type="success"
-                  :disabled="scope.row.volume_long === 0"
-                  @click="handleCloseOpen(scope.$index, scope.row, 'SELL')">反手</el-button>
-          </template>
-        </el-table-column>
-        <el-table-column
-                prop="volume_short"
-                label="空仓"
-                align="right"
-                class-name="col-sell"
-                width="50">
-        </el-table-column>
-        <el-table-column
-                prop="open_price_short"
-                label="开仓均价"
-                width="80"
-                align="right"
-                class-name="col-sell"
-                :formatter="formatterPrice">
-        </el-table-column>
-        <el-table-column
-                prop="position_profit_short"
-                label="持仓盈亏"
-                align="right"
-                class-name="col-sell"
-                width="80"
-                :formatter="formatterPrice">
-        </el-table-column>
-        <el-table-column label="操作" width="150"  class-name="col-sell">
-            <template slot-scope="scope">
-                <el-button
-                  size="mini"
-                  type="danger"
-                  :disabled="scope.row.volume_short === 0"
-                  @click="handleClose(scope.$index, scope.row, 'BUY')">平仓</el-button>
-                <el-button
-                  size="mini"
-                  type="danger"
-                  :disabled="scope.row.volume_short === 0"
-                  @click="handleCloseOpen(scope.$index, scope.row, 'BUY')">反手</el-button>
-          </template>
-        </el-table-column>
-        <el-table-column
-                prop="margin"
-                label="持仓占用"
-                align="right"
-                width="80"
-                :formatter="formatterPrice">
-        </el-table-column>
-    </el-table>
+    <Table :height="height" :columns="columns" :data="positionsArr"></Table>
 </template>
 
 <script>
-  import {mapGetters} from 'vuex'
-  import {FormatPrice} from '@/plugins/utils'
+  import {FormatPrice, ObjectToArray} from '@/plugins/utils'
+
   export default {
     data() {
-      return {};
+      return {
+        positionsArr: [],
+        columns: [
+          {
+            title: '合约代码',
+            key: 'instrument_id',
+            width: 80,
+            fixed: 'left'
+          },
+          {
+            title: '最新价',
+            key: 'last_price',
+            width: 80,
+            align: 'right',
+            fixed: 'left'
+          },
+          {
+            title: '多仓',
+            key: 'volume_long',
+            width: 50,
+            align: 'right',
+            className: "col-buy"
+          },
+          {
+            title: '开仓均价',
+            key: 'open_price_long',
+            width: 80,
+            align: 'right',
+            className: 'col-buy',
+            render: this.formatterPrice
+          },
+          {
+            title: '持仓盈亏',
+            key: 'position_profit_long',
+            width: 80,
+            align: 'right',
+            className: 'col-buy',
+            render: this.formatterPrice
+          },
+          {
+            title: '操作',
+            key: 'action',
+            width: 150,
+            align: 'center',
+            className: 'col-buy',
+            render: this.genButtons
+          },
+          {
+            title: '空仓',
+            key: 'volume_short',
+            width: 50,
+            align: 'right',
+            className: "col-sell"
+          },
+          {
+            title: '开仓均价',
+            key: 'open_price_short',
+            width: 80,
+            align: 'right',
+            className: 'col-sell',
+            render: this.formatterPrice
+          },
+          {
+            title: '持仓盈亏',
+            key: 'position_profit_short',
+            width: 80,
+            align: 'right',
+            className: 'col-sell',
+            render: this.formatterPrice
+          },
+          {
+            title: '操作',
+            key: 'action',
+            width: 150,
+            align: 'center',
+            className: 'col-sell',
+            render: this.genButtons
+          },
+          {
+            title: '持仓占用',
+            key: 'margin',
+            width: 80,
+            align: 'right',
+            render: this.formatterPrice
+          }
+        ]
+      }
     },
     props: {
       height: {
@@ -120,48 +104,86 @@
         default: false
       }
     },
-    mounted() {},
-    computed: {
-      ...mapGetters({
-        positions: 'positions/GET_POSITIONS'
+    mounted() {
+      this.$on('tqsdk:rtn_data', function(){
+        let positions = this.$tqsdk.get_positions()
+        if (positions && this.$tqsdk.is_changed(positions)) {
+          ObjectToArray(
+            positions,
+            this.positionsArr,
+            (v) => ['exchange_id'] + '.' + v['instrument_id'],
+            (v) => v.volume_long > 0 || v.volume_short > 0
+          )
+        }
       })
     },
     methods: {
-        formatterPrice (row, column, cellValue, index) {
-            return FormatPrice(cellValue)
+        formatterPrice (h, params) {
+            return h('div', FormatPrice(params.row[params.column.key]))
+        },
+        genButtons (h, params) {
+          let type = params.column.className === 'col-buy' ? 'success' : 'error'
+          let dir = params.column.className === 'col-buy' ? 'SELL' : 'BUY'
+          let volume = params.column.className === 'col-buy' ? params.row.volume_long : params.row.volume_short
+          let btns = [
+            h('Button', {
+              props: {
+                type: type,
+                size: 'small'
+              },
+              style: {
+                marginRight: '5px'
+              },
+              on: {
+                click: () => {
+                  this.handleClose(params.index, params.row, dir)
+                }
+              }
+            }, '平仓'),
+            h('Button', {
+              props: {
+                type: type,
+                size: 'small'
+              },
+              style: {
+                marginRight: '5px'
+              },
+              on: {
+                click: () => {
+                  this.handleCloseOpen(params.index, params.row, dir)
+                }
+              }
+            }, '反手')
+          ]
+          return volume > 0 ? h('div', btns) : h('div', [])
         },
         handleClose (index, row, direction) {
-            let quote = this.$store.getters['quotes/GET_QUOTE'](row.exchange_id + '.' + row.instrument_id)
             let volume = direction === 'BUY' ? row.volume_short : row.volume_long
-            this.$store.commit('INSERT_ORDER', {
-              symbol: quote.instrument_id, 
-              exchange_id: quote.exchange_id,
-              ins_id: quote.ins_id,
+            this.$tqsdk.insert_order({
+              exchange_id: row.exchange_id,
+              ins_id: row.instrument_id,
               direction: direction,
               offset: 'CLOSE',
-              limitPrice: quote.last_price,
+              limit_price: row.last_price,
               volume: volume
             })
         },
         handleCloseOpen (index, row, direction) {
-            let quote = this.$store.getters['quotes/GET_QUOTE'](row.exchange_id + '.' + row.instrument_id)
             let volume = direction === 'BUY' ? row.volume_short : row.volume_long
-            this.$store.commit('INSERT_ORDER', {
-              symbol: quote.instrument_id, 
-              exchange_id: quote.exchange_id,
-              ins_id: quote.ins_id,
+            this.$tqsdk.insert_order({
+              exchange_id: row.exchange_id,
+              ins_id: row.instrument_id,
               direction: direction,
               offset: 'CLOSE',
-              limitPrice: quote.last_price,
+              limit_price: row.last_price,
               volume: volume
             })
-            this.$store.commit('INSERT_ORDER', {
-              symbol: quote.instrument_id, 
-              exchange_id: quote.exchange_id,
-              ins_id: quote.ins_id,
+          this.$tqsdk.insert_order({
+              exchange_id: row.exchange_id,
+              ins_id: row.instrument_id,
               direction: direction,
               offset: 'OPEN',
-              limitPrice: quote.last_price,
+            limit_price: row.last_price,
               volume: volume
             })
         },

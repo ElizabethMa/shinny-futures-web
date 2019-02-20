@@ -1,59 +1,58 @@
 <template>
-    <el-container :style="{height:'100%'}">
-        <el-aside>
-            <el-form size="small" label-position="right" label-width="40px" id="trade">
-                <h3 class="title">Shinny Tech ( {{$store.state.bid}} )</h3>
-                <el-form-item label="合约">
-                    <el-autocomplete
-                      clearable
-                      class="inline-input"
-                      v-model="instrumentId"
-                      :fetch-suggestions="querySearch"
-                      @select="handleSelectInstrument"
-                    ></el-autocomplete>
-                </el-form-item>
-                <el-form-item label="手数">
-                    <el-input-number v-model="volume"/>
-                </el-form-item>
-                <el-form-item label="价格">
-                    <el-input-number :step="priceTick" :precision="priceDecs" :max="maxPrice" :min="minPrice" v-model="limitPrice"/>
-                </el-form-item>
-                <el-form-item>
-                  <el-row>
-                      <el-col :span="12">
-                          <el-button size="small" plain @click="insertOrder('BUY', 'OPEN')">买开</el-button>
-                      </el-col>
-                      <el-col :span="12">
-                          <el-button size="small" plain @click="insertOrder('SELL', 'OPEN')">卖开</el-button>
-                      </el-col>
-                      <el-col :span="12">
-                          <el-button size="small" plain @click="insertOrder('BUY', 'CLOSE')">买平</el-button>
-                      </el-col>
-                      <el-col :span="12">
-                          <el-button size="small" plain @click="insertOrder('SELL', 'CLOSE')">卖平</el-button>
-                      </el-col>
-                  </el-row>
-                </el-form-item>
-            </el-form>
-        </el-aside>
-        <el-main>
-            <el-menu :default-active="selectedTab" class="el-menu-demo" mode="horizontal" @select="handleSelectTab">
-                <el-menu-item index="accounts">账户</el-menu-item>
-                <el-menu-item index="positions">持仓</el-menu-item>
-                <el-menu-item index="orders">委托单</el-menu-item>
-                <el-menu-item index="trades">成交记录</el-menu-item>
-            </el-menu>
-            <el-container class="tabs-container" :class="selectedTab">
-                <table-accounts v-if="selectedTab === 'accounts'"/>
-                <table-positions v-if="selectedTab === 'positions'" :height="tableHeight"/>
-                <table-orders v-if="selectedTab === 'orders'" :height="tableHeight"/>
-                <table-trades v-if="selectedTab === 'trades'" :height="tableHeight"/>
-            </el-container>
-        </el-main>
-    </el-container>
+    <div class="user-trade">
+        <SplitLeftRight :split="split">
+            <template slot="left">
+                <Form :label-width="60">
+                    <FormItem label="合约" >
+                        <AutoComplete clearable
+                                      v-model="instrumentId"
+                                      @on-search="querySearch"
+                                      placeholder="请输入合约"
+                                      style="width:200px">
+                            <div class="auto-complete-search-result">
+                                <Option v-for="item in searchResult" :value="item" :key="item">{{ item }}</Option>
+                            </div>
+                        </AutoComplete>
+                    </FormItem>
+                    <FormItem label="手数">
+                        <InputNumber v-model="volume" :min="1" style="width:200px"></InputNumber>
+                    </FormItem>
+                    <FormItem label="价格">
+                        <InputNumber v-model="limitPrice" :max="maxPrice" :min="minPrice"
+                                     :step="priceTick" style="width:200px"></InputNumber>
+                    </FormItem>
+                    <FormItem>
+                        <Button @click="insertOrder('BUY', 'OPEN')">买开</Button>
+                        <Button style="margin-left: 8px" @click="insertOrder('SELL', 'OPEN')">卖开</Button>
+                    </FormItem>
+                    <FormItem>
+                        <Button @click="insertOrder('BUY', 'CLOSE')">买平</Button>
+                        <Button style="margin-left: 8px" @click="insertOrder('SELL', 'CLOSE')">卖平</Button>
+                    </FormItem>
+                </Form>
+            </template>
+            <template slot="right">
+                <Tabs type="card" v-model="selectedTab" :animated=false>
+                    <TabPane label="账户" name="accounts">
+                        <table-accounts/>
+                    </TabPane>
+                    <TabPane label="持仓" name="positions">
+                        <table-positions :height="height"/>
+                    </TabPane>
+                    <TabPane label="委托单" name="orders">
+                        <table-orders :height="height"/>
+                    </TabPane>
+                    <TabPane label="成交记录" name="trades">
+                        <table-trades :height="height"/>
+                    </TabPane>
+                </Tabs>
+            </template>
+        </SplitLeftRight>
+    </div>
 </template>
 <script>
   import {mapGetters} from 'vuex'
+  import SplitLeftRight from "@/components/SplitLeftRight.vue"
   import TableAccounts from "@/components/TableAccounts.vue"
   import TablePositions from "@/components/TablePositions.vue"
   import TableOrders from "@/components/TableOrders.vue"
@@ -64,10 +63,13 @@
       TableAccounts,
       TablePositions,
       TableOrders,
-      TableTrades
+      TableTrades,
+      SplitLeftRight
     },
     data() {
       return {
+        split: 0.3,
+        searchResult: [],
         selectedTab: 'accounts', // accounts positions orders trades
         volume: 1,
         priceTick: 1,
@@ -81,7 +83,7 @@
       this.$store.subscribe((mutation, state) => {
         // 订阅事件，任何地方选中某行，都会更新这个组件
         if (mutation.type === 'SET_SELECTED_SYMBOL') {
-          let quote = this.$store.getters['quotes/GET_QUOTE'](mutation.payload)
+          let quote = this.$tqsdk.get_quote(mutation.payload)
           if (quote) {
             this.priceTick = Number(quote.price_tick)
             this.limitPrice = Number(quote.last_price)
@@ -93,10 +95,8 @@
       })
     },
     computed: {
-      tableHeight(){
-        // 减去 tabs-header
-        console.log(this.$store.state.userViewHeight)
-        return (this.$store.state.userViewHeight - 32) + 'px'
+      height: function () {
+        return (this.$root.windowHeight * (1 - this.$root.appSplit) - 44) + ''
       },
       instrumentId: {
         get: function () {
@@ -111,71 +111,42 @@
       })
     },
     methods: {
-      handleSelectTab (index, indexPath) {
-        this.selectedTab = index;
-      },
       querySearch (queryString, cb) {
-        let results = queryString ? this.$store.getters['quotes/GET_QUOTES_BY_INPUT'](queryString) : []
-        cb(results);
+        this.searchResult = this.$tqsdk.get_quotes_by_input(queryString)
       },
       handleSelectInstrument (item) {},
       insertOrder (direction, offset) {
-        let quote = this.$store.getters['quotes/GET_QUOTE'](this.instrumentId)
-        this.$store.commit('INSERT_ORDER', {
-          symbol: quote.instrument_id, 
+        let quote = this.$tqsdk.get_quote(this.instrumentId)
+        console.log(this.limitPrice)
+        this.$tqsdk.insert_order({
           exchange_id: quote.exchange_id,
           ins_id: quote.ins_id,
           direction: direction,
           offset: offset,
-          limitPrice: this.limitPrice,
+          limit_price: this.limitPrice,
           volume: this.volume
         })
       }
     }
   }
 </script>
-<style scoped lang="scss">
-    .el-aside {
-        z-index: 30;
+<style lang="scss">
+    .user-trade {
         height: 100%;
-        border-right: 1px solid #dedede;
-        .title {
-          text-align: center;
-          color: #333333;
-          margin: 15px auto;
+        .split-pane {
+            margin: 8px 2px 8px 6px;
+            height: 100%;
+            overflow: hidden;
         }
-        .el-form#trade {
-          // position: absolute;
-          // bottom: 0;
-            padding: 8px 12px;
-            .el-form-item {
-                margin-bottom: 10px;
-            }
-            .el-row .el-col {
-                text-align: center;
-                margin: 6px 0;
-            }
-            .el-autocomplete.inline-input {
-              width: 100%
-            }
-            .el-input-number {
-              width: 100%
-            }
+        .ivu-tabs-bar {
+            margin-bottom: 6px;
+        }
+        .ivu-table-cell {
+            padding-left: 10px;
+            padding-right: 10px;
         }
     }
-    .el-main {
-        padding: 0;
-        margin: 0;
-        overflow: hidden;
-    }
-    .el-menu--horizontal>.el-menu-item {
-        height: 32px;
-        line-height: 32px;
-    }
-    .el-container.tabs-container {
-        overflow: hidden;
-        .el-table {
-          margin-bottom: 0;
-        }
+    .auto-complete-search-result {
+        height: 200px;
     }
 </style>

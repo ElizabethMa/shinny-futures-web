@@ -1,33 +1,33 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Quotes from '../view/quotes.vue'
-import Charts from '../view/charts.vue'
-import User from '../view/user.vue'
-import Tags from '@/store/tags'
+import Quotes from '../views/Quotes.vue'
+import User from '../views/User.vue'
+import Chart from '../views/Charts.vue'
+import Tags from '../store/tags'
 
 Vue.use(Router)
 
-const DefaultTag = Tags[0].id
-
 export default new Router({
   routes: [
-    { path: '/', 
-      redirect: '/quotes/' + DefaultTag },
-    { path: '/quotes/:tag',
+    {
+      path: '/quotes/:tag',
       name: 'quotes',
       components: {
         quotes: Quotes,
         user: User
       }
-    }, 
-    { path: '/stock/:instrument_id',
-      name: 'stock',
+    },
+    {
+      path: '/charts/:instrument_id',
+      name: 'charts',
       components: {
-        quotes: Charts,
+        quotes: Chart,
+        // quotes: () => import(/* webpackChunkName: "Charts" */ './views/Charts.vue'), // lazy-loaded
         user: User
       }
     },
-    { path: '/*',
-      redirect: '/quotes/' + DefaultTag
+    {
+      path: '/*',
+      redirect: '/quotes/' + Tags[0].id  // DefaultTag
     }]
 })
